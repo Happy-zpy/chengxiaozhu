@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>课程表</title>
+  <style>
+    :root {
+      --primary: #1a73e8;
+      --bg: #ffffff;
+      --text: #333333;
+      --text-light: #999999;
+      --border: #e8e8e8;
+      --shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      background: #f5f5f5;
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--bg);
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    h1 {
+      font-size: 18px;
+      font-weight: 500;
+    }
+
+    .week-selector {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .week-btn {
+      background: #f0f0f0;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 14px;
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      width: 32px;
+      height: 32px;
+    }
+
+    .week-btn:hover {
+      background: #e0e0e0;
+    }
+
+    .week-btn svg {
+      width: 12px;
+      height: 12px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+    }
+
+    .week-dropdown {
+      position: relative;
+    }
+
+    .week-dropdown-btn {
+      background: #f0f0f0;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+      min-width: 80px;
+    }
+
+    .week-dropdown-btn:hover {
+      background: #e0e0e0;
+    }
+
+    .week-dropdown-btn svg {
+      width: 10px;
+      height: 10px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      transition: transform 0.2s;
+    }
+
+    .week-dropdown.open .week-dropdown-btn svg {
+      transform: rotate(180deg);
+    }
+
+    .week-dropdown-menu {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      margin-top: 4px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      border: 1px solid var(--border);
+      min-width: 100px;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+      z-index: 200;
+    }
+
+    .week-dropdown.open .week-dropdown-menu {
+      display: block;
+    }
+
+    .week-dropdown-item {
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+      text-align: center;
+    }
+
+    .week-dropdown-item:hover {
+      background: #f5f5f5;
+    }
+
+    .week-dropdown-item.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+    }
+
+    .tab {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      background: #f5f5f5;
+      color: var(--text-light);
+      transition: all 0.2s;
+    }
+
+    .tab.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    .schedule-wrapper {
+      background: var(--bg);
+      margin: 12px;
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .schedule-grid {
+      display: grid;
+      grid-template-columns: 90px repeat(7, 1fr);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .grid-header {
+      padding: 12px 6px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--text);
+      border-bottom: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      background: #fafafa;
+    }
+
+    .grid-header:first-child {
+      background: transparent;
+      border-right: none;
+    }
+
+    .grid-header .day-name {
+      display: block;
+      font-weight: 500;
+    }
+
+    .grid-header .day-date {
+      display: block;
+      font-size: 11px;
+      color: var(--text-light);
+      margin-top: 2px;
+    }
+
+    .time-label {
+      padding: 12px 6px;
+      font-size: 12px;
+      color: var(--text-light);
+      border-right: 1px solid var(--border);
+      background: #fafafa;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 90px;
+    }
+
+    .time-label .period {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .time-label .time {
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .day-cell {
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      min-height: 90px;
+      position: relative;
+    }
+
+    .day-cell:last-child {
+      border-right: none;
+    }
+
+    .course-card {
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      right: 4px;
+      bottom: 4px;
+      border-radius: 8px;
+      padding: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .course-card:hover {
+      transform: scale(0.98);
+      opacity: 0.9;
+    }
+
+    .course-card .name {
+      font-size: 13px;
+      font-weight: 500;
+      color: #333;
+      line-height: 1.4;
+      margin-bottom: 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+
+    .course-card .place {
+      font-size: 11px;
+      color: #666;
+    }
+
+    .practice-section {
+      margin: 12px;
+      background: var(--bg);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+
+    .practice-section h2 {
+      font-size: 16px;
+      font-weight: 500;
+      margin-bottom: 12px;
+      padding-left: 8px;
+      border-left: 4px solid var(--primary);
+    }
+
+    .practice-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .practice-item {
+      padding: 12px;
+      background: #fafafa;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .practice-item:hover {
+      background: #f0f0f0;
+    }
+
+    .practice-item .left {
+      flex: 1;
+    }
+
+    .practice-item .name {
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .practice-item .info {
+      font-size: 12px;
+      color: var(--text-light);
+    }
+
+    .practice-item .grade {
+      font-size: 12px;
+      color: var(--primary);
+      background: rgba(26, 115, 232, 0.1);
+      padding: 4px 8px;
+      border-radius: 12px;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal {
+      background: var(--bg);
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 360px;
+      width: 90%;
+      transform: scale(0.9);
+      transition: transform 0.3s;
+    }
+
+    .modal-overlay.active .modal {
+      transform: scale(1);
+    }
+
+    .modal h3 {
+      font-size: 18px;
+      font-weight: 500;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .modal .detail-row {
+      display: flex;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+
+    .modal .label {
+      color: var(--text-light);
+      width: 70px;
+      flex-shrink: 0;
+    }
+
+    .modal .value {
+      color: var(--text);
+    }
+
+    .modal-close {
+      margin-top: 20px;
+      width: 100%;
+      padding: 12px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .course-card[data-color="0"] { background: #fff3e0; }
+    .course-card[data-color="1"] { background: #fce4ec; }
+    .course-card[data-color="2"] { background: #e3f2fd; }
+    .course-card[data-color="3"] { background: #e8f5e9; }
+    .course-card[data-color="4"] { background: #f3e5f5; }
+    .course-card[data-color="5"] { background: #e0f7fa; }
+    .course-card[data-color="6"] { background: #fff9c4; }
+    .course-card[data-color="7"] { background: #fbe9e7; }
+    .course-card[data-color="8"] { background: #e8eaf6; }
+
+    @media (max-width: 768px) {
+      .schedule-grid {
+        grid-template-columns: 70px repeat(7, 1fr);
+      }
+
+      .time-label {
+        padding: 8px 4px;
+        min-height: 80px;
+      }
+
+      .time-label .period {
+        font-size: 12px;
+      }
+
+      .time-label .time {
+        font-size: 10px;
+      }
+
+      .grid-header {
+        padding: 8px 4px;
+        font-size: 12px;
+      }
+
+      .course-card {
+        padding: 6px;
+      }
+
+      .course-card .name {
+        font-size: 11px;
+      }
+
+      .course-card .place {
+        font-size: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-content">
+      <div class="week-selector">
+        <button class="week-btn" id="prevWeek">
+          <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="week-dropdown" id="weekDropdown">
+          <button class="week-dropdown-btn">
+            <span id="weekDisplay">第1周</span>
+            <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></svg>
+          </button>
+          <div class="week-dropdown-menu" id="weekDropdownMenu"></div>
+        </div>
+        <button class="week-btn" id="nextWeek">
+          <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+      <h1>课程表</h1>
+      <div class="tabs">
+        <div class="tab active">我的课表</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="schedule-wrapper">
+    <div class="schedule-grid" id="scheduleGrid"></div>
+  </div>
+
+  <div class="practice-section">
+    <h2>实践/实习课程</h2>
+    <div class="practice-list" id="practiceList"></div>
+  </div>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modal">
+      <h3 id="modalTitle">课程详情</h3>
+      <div id="modalContent"></div>
+      <button class="modal-close" id="modalClose">关闭</button>
+    </div>
+  </div>
+
+  <script>
+    const DAYS = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日'];
+    const TIME_SLOTS = [
+      { period: '第1-2节', time: '08:00-09:40' },
+      { period: '第3-4节', time: '10:00-11:40' },
+      { period: '第5-6节', time: '14:00-15:40' },
+      { period: '第7-8节', time: '16:00-17:40' },
+      { period: '第9-10节', time: '19:00-20:40' }
+    ];
+
+    let allData = { course: [], practice: [] };
+    let currentWeek = 1;
+    let courseColorMap = {};
+    let maxWeek = 1;
+
+    async function loadData() {
+      try {
+        const response = await fetch('data.json');
+        const result = await response.json();
+        if (result.code === 200) {
+          allData = result.data;
+          maxWeek = Math.max(...allData.course.map(c => c.week), 1);
+          buildCourseColorMap();
+          renderWeekDropdown();
+          render();
+        }
+      } catch (error) {
+        console.error('加载数据失败:', error);
+      }
+    }
+
+    function buildCourseColorMap() {
+      const uniqueCourses = [...new Set(allData.course.map(c => c.name))];
+      uniqueCourses.forEach((name, index) => {
+        courseColorMap[name] = index % 9;
+      });
+    }
+
+    function getCoursesForWeek(week) {
+      return allData.course.filter(c => c.week === week);
+    }
+
+    function getWeeksWithCourse(courseName) {
+      const weeks = allData.course
+        .filter(c => c.name === courseName)
+        .map(c => c.week)
+        .sort((a, b) => a - b);
+      return [...new Set(weeks)];
+    }
+
+    function formatWeeks(weeks) {
+      if (!weeks || weeks.length === 0) return '';
+      const ranges = [];
+      let start = weeks[0];
+      let end = weeks[0];
+      for (let i = 1; i < weeks.length; i++) {
+        if (weeks[i] === end + 1) {
+          end = weeks[i];
+        } else {
+          ranges.push(start === end ? `${start}` : `${start}-${end}`);
+          start = weeks[i];
+          end = weeks[i];
+        }
+      }
+      ranges.push(start === end ? `${start}` : `${start}-${end}`);
+      return `第${ranges.join('、')}周`;
+    }
+
+    function getDateForDay(dayIndex) {
+      const today = new Date();
+      const dayOfWeek = today.getDay();
+      const monday = new Date(today);
+      monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+      const targetDate = new Date(monday);
+      targetDate.setDate(monday.getDate() + dayIndex);
+      return `${targetDate.getMonth() + 1}/${targetDate.getDate()}`;
+    }
+
+    function renderWeekDropdown() {
+      const menu = document.getElementById('weekDropdownMenu');
+      menu.innerHTML = '';
+      for (let i = 1; i <= maxWeek; i++) {
+        const item = document.createElement('div');
+        item.className = `week-dropdown-item${i === currentWeek ? ' active' : ''}`;
+        item.textContent = `第${i}周`;
+        item.onclick = () => selectWeek(i);
+        menu.appendChild(item);
+      }
+    }
+
+    function selectWeek(week) {
+      currentWeek = week;
+      document.getElementById('weekDisplay').textContent = `第${week}周`;
+      document.getElementById('weekDropdown').classList.remove('open');
+      renderWeekDropdown();
+      render();
+    }
+
+    function render() {
+      renderSchedule();
+      renderPractice();
+    }
+
+    function renderSchedule() {
+      const grid = document.getElementById('scheduleGrid');
+      grid.innerHTML = '';
+
+      grid.innerHTML += '<div class="grid-header"></div>';
+      DAYS.forEach((day, index) => {
+        const date = getDateForDay(index);
+        grid.innerHTML += `
+          <div class="grid-header">
+            <span class="day-name">${day.slice(1)}</span>
+            <span class="day-date">${date}</span>
+          </div>
+        `;
+      });
+
+      TIME_SLOTS.forEach((slot) => {
+        grid.innerHTML += `
+          <div class="time-label">
+            <span class="period">${slot.period}</span>
+            <span class="time">${slot.time}</span>
+          </div>
+        `;
+
+        DAYS.forEach((day) => {
+          const courses = getCoursesForWeek(currentWeek).filter(c => c.day === day && c.time === slot.period.replace('第', '').replace('节', ''));
+
+          if (courses.length === 0) {
+            grid.innerHTML += '<div class="day-cell"></div>';
+          } else {
+            const course = courses[0];
+            const weeks = getWeeksWithCourse(course.name);
+            const colorIndex = courseColorMap[course.name];
+            grid.innerHTML += `
+              <div class="day-cell">
+                <div class="course-card" data-color="${colorIndex}" onclick="showCourseDetail(${JSON.stringify(course).replace(/"/g, '&quot;')})">
+                  <div class="name">${course.name}</div>
+                  <div class="place">@${course.place}</div>
+                </div>
+              </div>
+            `;
+          }
+        });
+      });
+    }
+
+    function renderPractice() {
+      const list = document.getElementById('practiceList');
+      list.innerHTML = '';
+
+      const practices = allData.practice;
+
+      if (practices.length === 0) {
+        list.innerHTML = '<div style="text-align:center;color:#999;padding:20px">暂无实践课程</div>';
+        return;
+      }
+
+      practices.forEach(p => {
+        list.innerHTML += `
+          <div class="practice-item" onclick="showPracticeDetail(${JSON.stringify(p).replace(/"/g, '&quot;')})">
+            <div class="left">
+              <div class="name">${p.courseName}</div>
+              <div class="info">${p.teacherName} · ${p.time}</div>
+            </div>
+            <div class="grade">${p.grade}学分</div>
+          </div>
+        `;
+      });
+    }
+
+    function showCourseDetail(course) {
+      const weeks = getWeeksWithCourse(course.name);
+      document.getElementById('modalTitle').textContent = course.name;
+      document.getElementById('modalContent').innerHTML = `
+        <div class="detail-row"><span class="label">授课教师</span><span class="value">${course.teacher}</span></div>
+        <div class="detail-row"><span class="label">上课地点</span><span class="value">${course.place}</span></div>
+        <div class="detail-row"><span class="label">上课时间</span><span class="value">${course.day} ${course.time}节</span></div>
+        <div class="detail-row"><span class="label">上课周次</span><span class="value">${formatWeeks(weeks)}</span></div>
+      `;
+      document.getElementById('modalOverlay').classList.add('active');
+    }
+
+    function showPracticeDetail(practice) {
+      document.getElementById('modalTitle').textContent = practice.courseName;
+      document.getElementById('modalContent').innerHTML = `
+        <div class="detail-row"><span class="label">授课教师</span><span class="value">${practice.teacherName}</span></div>
+        <div class="detail-row"><span class="label">上课周次</span><span class="value">${practice.time}</span></div>
+        <div class="detail-row"><span class="label">学分</span><span class="value">${practice.grade}学分</span></div>
+      `;
+      document.getElementById('modalOverlay').classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('modalOverlay').classList.remove('active');
+    }
+
+    document.getElementById('prevWeek').addEventListener('click', () => {
+      if (currentWeek > 1) {
+        selectWeek(currentWeek - 1);
+      }
+    });
+
+    document.getElementById('nextWeek').addEventListener('click', () => {
+      if (currentWeek < maxWeek) {
+        selectWeek(currentWeek + 1);
+      }
+    });
+
+    document.getElementById('weekDropdown').addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.getElementById('weekDropdown').classList.toggle('open');
+    });
+
+    document.addEventListener('click', () => {
+      document.getElementById('weekDropdown').classList.remove('open');
+    });
+
+    document.getElementById('modalClose').addEventListener('click', closeModal);
+    document.getElementById('modalOverlay').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeModal();
+    });
+
+    loadData();
+  </script>
+</body>
+</html>
